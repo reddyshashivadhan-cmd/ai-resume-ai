@@ -1,0 +1,1344 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ResuMate - Your AI Resume Companion</title>
+    <style>
+        :root {
+            --navy: #1a1a2e;
+            --gold: #c9a84c;
+            --bg: #f8f9fa;
+            --white: #ffffff;
+            --gray: #6b7280;
+            --light-gray: #e5e7eb;
+            --border: #e5e7eb;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: var(--bg);
+            color: var(--navy);
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* Header */
+        .header {
+            background: var(--white);
+            border-bottom: 1px solid var(--border);
+            padding: 12px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            height: 60px;
+            z-index: 100;
+            position: relative;
+        }
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--navy);
+            cursor: pointer;
+        }
+        .logo span:last-child {
+            color: var(--gold);
+        }
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .btn {
+            padding: 8px 16px;
+            border-radius: 50px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            border: none;
+            transition: all 0.2s;
+            white-space: nowrap;
+        }
+        .btn-primary {
+            background: var(--navy);
+            color: white;
+        }
+        .btn-primary:hover {
+            background: #2d2d4a;
+        }
+        .btn-outline {
+            background: white;
+            color: var(--navy);
+            border: 1.5px solid var(--navy);
+        }
+        .btn-outline:hover {
+            background: var(--navy);
+            color: white;
+        }
+        .btn-gold {
+            background: var(--gold);
+            color: var(--navy);
+        }
+        .btn-gold:hover {
+            background: #b8943a;
+        }
+        .btn-sm {
+            padding: 5px 10px;
+            font-size: 11px;
+        }
+
+        /* Main Layout */
+        .main-container {
+            display: flex;
+            height: calc(100vh - 60px);
+        }
+
+        /* Chat Panel */
+        .chat-panel {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: var(--white);
+            border-right: 1px solid var(--border);
+            min-width: 0;
+        }
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            background: #fafafa;
+        }
+        .message {
+            display: flex;
+            gap: 8px;
+            max-width: 85%;
+            animation: fadeIn 0.3s ease;
+        }
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        .message.user {
+            align-self: flex-end;
+            flex-direction: row-reverse;
+        }
+        .message-avatar {
+            font-size: 24px;
+            flex-shrink: 0;
+        }
+        .message-bubble {
+            padding: 10px 14px;
+            border-radius: 16px;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+        .message.ai .message-bubble {
+            background: #f0f0f0;
+            color: var(--navy);
+            border-bottom-left-radius: 4px;
+        }
+        .message.user .message-bubble {
+            background: var(--navy);
+            color: white;
+            border-bottom-right-radius: 4px;
+        }
+        .message.system .message-bubble {
+            background: #fff3cd;
+            color: #856404;
+            text-align: center;
+            font-size: 12px;
+            max-width: 100%;
+            border-radius: 8px;
+        }
+        .typing-indicator {
+            display: flex;
+            gap: 4px;
+            padding: 8px 14px;
+        }
+        .typing-dot {
+            width: 7px;
+            height: 7px;
+            background: #999;
+            border-radius: 50%;
+            animation: bounce 1.4s infinite ease-in-out;
+        }
+        .typing-dot:nth-child(1) { animation-delay: 0s; }
+        .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+        .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+        @keyframes bounce {
+            0%, 80%, 100% { transform: scale(0.6); }
+            40% { transform: scale(1); }
+        }
+
+        /* Chat Input */
+        .chat-input-area {
+            padding: 12px 16px;
+            border-top: 1px solid var(--border);
+            background: var(--white);
+        }
+        .chat-input-wrapper {
+            display: flex;
+            align-items: flex-end;
+            gap: 8px;
+            background: #f5f5f5;
+            border-radius: 20px;
+            padding: 6px 8px 6px 16px;
+            border: 1.5px solid transparent;
+            transition: border-color 0.2s;
+        }
+        .chat-input-wrapper:focus-within {
+            border-color: var(--gold);
+            background: white;
+        }
+        .chat-input-wrapper textarea {
+            flex: 1;
+            border: none;
+            background: transparent;
+            resize: none;
+            font-size: 14px;
+            font-family: inherit;
+            padding: 6px 0;
+            max-height: 100px;
+            outline: none;
+            line-height: 1.4;
+        }
+        .send-btn {
+            background: var(--navy);
+            color: white;
+            border: none;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            transition: background 0.2s;
+        }
+        .send-btn:hover {
+            background: #2d2d4a;
+        }
+        .send-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .quick-actions {
+            display: flex;
+            gap: 6px;
+            margin-top: 8px;
+            flex-wrap: wrap;
+        }
+        .quick-action {
+            font-size: 11px;
+            padding: 4px 10px;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            background: white;
+            cursor: pointer;
+            color: var(--gray);
+            transition: all 0.2s;
+        }
+        .quick-action:hover {
+            background: #f0f0f0;
+            color: var(--navy);
+        }
+
+        /* Preview Panel */
+        .preview-panel {
+            width: 420px;
+            background: white;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            flex-shrink: 0;
+        }
+        .preview-header {
+            padding: 12px 16px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            background: white;
+            z-index: 10;
+        }
+        .preview-header h3 {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--navy);
+        }
+        .preview-actions {
+            display: flex;
+            gap: 6px;
+        }
+        .template-selector {
+            display: flex;
+            gap: 4px;
+            padding: 8px 16px;
+            border-bottom: 1px solid var(--border);
+            overflow-x: auto;
+            background: white;
+        }
+        .template-dot {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            border: 2px solid transparent;
+            cursor: pointer;
+            flex-shrink: 0;
+        }
+        .template-dot.active {
+            border-color: var(--navy);
+            box-shadow: 0 0 0 2px white, 0 0 0 4px var(--navy);
+        }
+        .preview-content {
+            padding: 24px;
+            flex: 1;
+        }
+        .resume-section {
+            margin-bottom: 20px;
+        }
+        .resume-section h2 {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            border-bottom: 2px solid;
+            padding-bottom: 4px;
+            margin-bottom: 10px;
+        }
+        .resume-name {
+            font-size: 24px;
+            font-weight: 800;
+        }
+        .resume-contact {
+            font-size: 11px;
+            color: var(--gray);
+            margin-top: 4px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px 12px;
+        }
+        .resume-summary {
+            font-size: 13px;
+            color: #444;
+            line-height: 1.5;
+        }
+        .resume-item {
+            margin-bottom: 12px;
+        }
+        .resume-item-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+        }
+        .resume-item-title {
+            font-weight: 600;
+            font-size: 14px;
+        }
+        .resume-item-subtitle {
+            font-size: 13px;
+            color: var(--gray);
+        }
+        .resume-item-date {
+            font-size: 11px;
+            color: var(--gray);
+            white-space: nowrap;
+        }
+        .resume-item-details {
+            font-size: 12px;
+            color: #555;
+            margin-top: 4px;
+            padding-left: 16px;
+            line-height: 1.5;
+        }
+        .resume-item-details li {
+            margin-bottom: 2px;
+        }
+        .skill-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+        .skill-tag {
+            font-size: 11px;
+            padding: 3px 10px;
+            border-radius: 12px;
+            background: #f0f0f0;
+        }
+        .placeholder-text {
+            color: #ccc;
+            font-style: italic;
+        }
+
+        /* Landing Page */
+        .landing-page {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            height: 100%;
+            padding: 20px;
+        }
+        .landing-page h1 {
+            font-size: 36px;
+            font-weight: 800;
+            color: var(--navy);
+            margin-bottom: 12px;
+            line-height: 1.2;
+        }
+        .landing-page h1 span {
+            color: var(--gold);
+        }
+        .landing-page p {
+            color: var(--gray);
+            font-size: 16px;
+            margin-bottom: 24px;
+            max-width: 500px;
+        }
+        .demo-chat {
+            max-width: 450px;
+            width: 100%;
+            background: white;
+            border-radius: 16px;
+            border: 1px solid var(--border);
+            padding: 16px;
+            margin-top: 20px;
+            text-align: left;
+        }
+
+        /* Mobile */
+        .mobile-preview-toggle {
+            display: none;
+            position: fixed;
+            bottom: 16px;
+            right: 16px;
+            z-index: 50;
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: var(--navy);
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-size: 20px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+
+        /* Founders footer */
+        .founders-note {
+            text-align: center;
+            padding: 8px;
+            font-size: 11px;
+            color: #999;
+            border-top: 1px solid var(--border);
+            background: #fafafa;
+        }
+
+        @media (max-width: 768px) {
+            .preview-panel {
+                display: none;
+                position: fixed;
+                inset: 0;
+                z-index: 60;
+                width: 100%;
+                background: white;
+            }
+            .preview-panel.mobile-open {
+                display: flex;
+            }
+            .mobile-preview-toggle {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+            .chat-panel {
+                border-right: none;
+            }
+            .landing-page h1 {
+                font-size: 24px;
+            }
+        }
+    </style>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🐊</text></svg>">
+</head>
+<body>
+
+    <!-- Header -->
+    <header class="header">
+        <div class="logo" onclick="showLanding()">
+            <span>🐊</span>
+            <span>Resu</span><span>Mate</span>
+        </div>
+        <div class="header-actions">
+            <button class="btn btn-outline btn-sm" onclick="resetResume()">New Resume</button>
+            <button class="btn btn-gold btn-sm" onclick="downloadPDF()">📥 Download PDF</button>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <div class="main-container" id="mainContainer">
+        <!-- Chat Panel -->
+        <div class="chat-panel" id="chatPanel">
+            <div class="chat-messages" id="chatMessages"></div>
+            <div class="chat-input-area">
+                <div class="chat-input-wrapper">
+                    <textarea id="chatInput" rows="1" placeholder="Type your message..." onkeydown="handleKeyDown(event)"></textarea>
+                    <button class="send-btn" id="sendBtn" onclick="sendMessage()" disabled>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 2L11 13"/><path d="M22 2L15 22L11 13L2 9L22 2Z"/></svg>
+                    </button>
+                </div>
+                <div class="quick-actions">
+                    <button class="quick-action" onclick="quickAction('Show my resume')">👁 Show Resume</button>
+                    <button class="quick-action" onclick="quickAction('Skip this question')">⏭ Skip</button>
+                    <button class="quick-action" onclick="resetAll()">🔄 Start Over</button>
+                    <button class="quick-action" onclick="quickAction('Who created you?')">ℹ️ About</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Preview Panel -->
+        <div class="preview-panel" id="previewPanel">
+            <div class="preview-header">
+                <h3>📄 Live Preview</h3>
+                <div class="preview-actions">
+                    <button class="btn btn-outline btn-sm" onclick="shareResume()">🔗 Share</button>
+                    <button class="btn btn-primary btn-sm" onclick="downloadPDF()">📥 PDF</button>
+                    <button class="btn btn-sm" style="background:#eee;" onclick="closeMobilePreview()" id="closePreviewBtn" title="Close">✕</button>
+                </div>
+            </div>
+            <div class="template-selector" id="templateSelector">
+                <span style="font-size:11px;color:var(--gray);margin-right:8px;display:flex;align-items:center;">Template:</span>
+                <button class="btn btn-sm active" style="font-size:10px;" onclick="changeTemplate('modern', this)" data-template="modern">Modern</button>
+                <button class="btn btn-sm" style="font-size:10px;background:#eee;" onclick="changeTemplate('classic', this)" data-template="classic">Classic</button>
+                <button class="btn btn-sm" style="font-size:10px;background:#eee;" onclick="changeTemplate('minimal', this)" data-template="minimal">Minimal</button>
+                <input type="color" value="#1a1a2e" onchange="changeAccentColor(this.value)" style="width:22px;height:22px;border-radius:50%;border:1px solid #ddd;cursor:pointer;margin-left:8px;" title="Accent Color">
+            </div>
+            <div class="preview-content" id="previewContent">
+                <div style="text-align:center;color:#ccc;padding:60px 20px;">
+                    <div style="font-size:48px;">🐊</div>
+                    <p style="margin-top:12px;">Your resume will appear here<br>as you chat with the AI</p>
+                </div>
+            </div>
+            <div class="founders-note">
+                Built with ❤️ by Sumanvi & Shashi Vadhan Reddy | ResuMate
+            </div>
+        </div>
+    </div>
+
+    <!-- Mobile Preview Toggle -->
+    <button class="mobile-preview-toggle" id="mobilePreviewBtn" onclick="toggleMobilePreview()" title="Show Preview">👁</button>
+
+    <script>
+        // ============ STATE ============
+        const resumeData = {
+            fullName: '',
+            email: '',
+            phone: '',
+            location: '',
+            linkedin: '',
+            portfolio: '',
+            github: '',
+            professionalSummary: '',
+            experiences: [],
+            education: [],
+            skills: [],
+            projects: [],
+            certifications: [],
+            languages: []
+        };
+
+        let currentTemplate = 'modern';
+        let accentColor = '#1a1a2e';
+        let conversationStage = 0; // Track which question we're on
+        let messages = [];
+        let isProcessing = false;
+
+        // ============ QUESTION FLOW ============
+        const questionFlow = [
+            { field: 'fullName', question: "Hey there! 👋 I'm ResuMate, created by Sumanvi and Shashi to make resume building actually enjoyable. Ready to get started? First, what's your full name?" },
+            { field: 'email', question: "Great! And what's your professional email address?" },
+            { field: 'phone', question: "Got it! What's your phone number? (Recruiters often call first)" },
+            { field: 'location', question: "Where are you based? Just city and country is fine." },
+            { field: 'linkedin', question: "Do you have a LinkedIn profile? Drop the link if you do." },
+            { field: 'portfolio', question: "Any portfolio website, GitHub, or personal site you'd like to include?" },
+            { field: 'professionalSummary', question: "Now, in 2-3 sentences, how would you describe yourself professionally? Think of this as your elevator pitch." },
+            { field: 'experience', question: "Let's talk about your work experience. Tell me about your most recent or current role — company name, your job title, and when you started.", isExperience: true },
+        ];
+
+        let currentQuestionIndex = 0;
+        let experienceStep = 0; // 0=company/title, 1=achievements, 2=more or next
+        let tempExperience = {};
+        let tempEducation = {};
+        let educationStep = 0;
+        let skillStep = 0;
+        let projectStep = 0;
+
+        // ============ INITIALIZATION ============
+        function init() {
+            // Check if returning user
+            const saved = localStorage.getItem('resumate_resume');
+            if (saved) {
+                try {
+                    const parsed = JSON.parse(saved);
+                    Object.assign(resumeData, parsed);
+                    addMessage('ai', "Welcome back! 👋 I've loaded your saved resume. Want to continue editing or start fresh? Just say 'continue' or 'start over'.");
+                } catch (e) {
+                    startNewConversation();
+                }
+            } else {
+                startNewConversation();
+            }
+            updatePreview();
+            updateSendButton();
+        }
+
+        function startNewConversation() {
+            currentQuestionIndex = 0;
+            conversationStage = 0;
+            messages = [];
+            document.getElementById('chatMessages').innerHTML = '';
+            askNextQuestion();
+        }
+
+        function resetAll() {
+            if (confirm('Are you sure you want to start over? All current data will be lost.')) {
+                Object.keys(resumeData).forEach(key => {
+                    if (Array.isArray(resumeData[key])) resumeData[key] = [];
+                    else resumeData[key] = '';
+                });
+                currentQuestionIndex = 0;
+                conversationStage = 0;
+                experienceStep = 0;
+                educationStep = 0;
+                skillStep = 0;
+                projectStep = 0;
+                tempExperience = {};
+                tempEducation = {};
+                messages = [];
+                document.getElementById('chatMessages').innerHTML = '';
+                localStorage.removeItem('resumate_resume');
+                updatePreview();
+                startNewConversation();
+            }
+        }
+
+        function resetResume() {
+            resetAll();
+        }
+
+        function showLanding() {
+            resetAll();
+            document.getElementById('chatMessages').innerHTML = '';
+            startNewConversation();
+        }
+
+        // ============ MESSAGING ============
+        function addMessage(role, content) {
+            messages.push({ role, content });
+            const messagesContainer = document.getElementById('chatMessages');
+            const msgDiv = document.createElement('div');
+            msgDiv.className = `message ${role}`;
+            msgDiv.innerHTML = `
+                ${role === 'ai' ? '<div class="message-avatar">🐊</div>' : ''}
+                ${role === 'user' ? '<div class="message-avatar">👤</div>' : ''}
+                <div class="message-bubble">${content}</div>
+            `;
+            messagesContainer.appendChild(msgDiv);
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+
+        function showTyping() {
+            const messagesContainer = document.getElementById('chatMessages');
+            const typingDiv = document.createElement('div');
+            typingDiv.className = 'message ai';
+            typingDiv.id = 'typingIndicator';
+            typingDiv.innerHTML = `
+                <div class="message-avatar">🐊</div>
+                <div class="message-bubble">
+                    <div class="typing-indicator">
+                        <div class="typing-dot"></div>
+                        <div class="typing-dot"></div>
+                        <div class="typing-dot"></div>
+                    </div>
+                </div>
+            `;
+            messagesContainer.appendChild(typingDiv);
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+
+        function hideTyping() {
+            const typing = document.getElementById('typingIndicator');
+            if (typing) typing.remove();
+        }
+
+        // ============ QUESTION LOGIC ============
+        function askNextQuestion() {
+            if (currentQuestionIndex < questionFlow.length) {
+                const q = questionFlow[currentQuestionIndex];
+                showTyping();
+                setTimeout(() => {
+                    hideTyping();
+                    addMessage('ai', q.question);
+                    currentQuestionIndex++;
+                }, 800 + Math.random() * 600);
+            } else {
+                // All basic questions done, ask about education
+                showTyping();
+                setTimeout(() => {
+                    hideTyping();
+                    if (resumeData.education.length === 0) {
+                        addMessage('ai', "Now let's add your education! 🎓 What's your highest degree, which institution, and what years did you attend?");
+                        conversationStage = 'education';
+                        educationStep = 0;
+                    } else if (resumeData.skills.length === 0) {
+                        addMessage('ai', "Let's list your skills! 💪 What are you good at? Technical skills, soft skills, languages — list them separated by commas.");
+                        conversationStage = 'skills';
+                    } else if (resumeData.projects.length === 0) {
+                        addMessage('ai', "Any projects you'd like to showcase? 🚀 Tell me about a project — its name and what it does.");
+                        conversationStage = 'projects';
+                        projectStep = 0;
+                    } else {
+                        addMessage('ai', "🎉 Your resume is looking great! You can:\n\n• Say **'show resume'** to preview\n• Ask me to **improve** any section\n• Say **'download'** to get your PDF\n• Just keep chatting to add more details\n\nWhat would you like to do?");
+                        conversationStage = 'complete';
+                    }
+                }, 800);
+            }
+        }
+
+        // ============ PROCESS USER INPUT ============
+        function processUserInput(userMessage) {
+            const msg = userMessage.toLowerCase().trim();
+
+            // Special commands
+            if (msg.includes('show resume') || msg.includes('preview') || msg.includes('how does it look')) {
+                updatePreview();
+                addMessage('ai', "Here's your live resume preview! 👆 Check the right panel. Want me to improve anything? Just say 'make it more professional' or 'add more metrics'.");
+                return;
+            }
+            if (msg.includes('who created') || msg.includes('who made')) {
+                addMessage('ai', "I was created by **Sumanvi**, the Founder, and **Shashi Vadhan Reddy**, the Co-Founder & CEO of ResuMate. Shashi also founded White Crocodile AI at just 14 years old! 🐊 Pretty cool, right?");
+                return;
+            }
+            if (msg.includes('download') || msg.includes('pdf')) {
+                downloadPDF();
+                return;
+            }
+            if (msg.includes('improve') || msg.includes('make it')) {
+                addMessage('ai', "Great idea! Let me enhance that for you. Can you tell me which section you want me to improve? For example: 'improve summary' or 'make experience sound better'.");
+                return;
+            }
+            if (msg.includes('thank')) {
+                addMessage('ai', "You're very welcome! 😊 Is there anything else you'd like to add or improve on your resume?");
+                return;
+            }
+
+            // Process based on current stage
+            if (conversationStage === 'education') {
+                handleEducationInput(userMessage);
+                return;
+            }
+            if (conversationStage === 'skills') {
+                handleSkillsInput(userMessage);
+                return;
+            }
+            if (conversationStage === 'projects') {
+                handleProjectsInput(userMessage);
+                return;
+            }
+            if (conversationStage === 'complete') {
+                // User can still add things
+                if (msg.includes('skill') || msg.includes('add')) {
+                    addMessage('ai', "Sure! What skills would you like to add? List them separated by commas.");
+                    conversationStage = 'skills';
+                    return;
+                }
+                if (msg.includes('experience') || msg.includes('work')) {
+                    addMessage('ai', "Tell me about the role! Company name, your title, and when you worked there.");
+                    conversationStage = 'experience_new';
+                    return;
+                }
+                if (msg.includes('education') || msg.includes('school') || msg.includes('degree')) {
+                    addMessage('ai', "What's the institution, degree, and years you attended?");
+                    educationStep = 0;
+                    conversationStage = 'education';
+                    return;
+                }
+                if (msg.includes('project')) {
+                    addMessage('ai', "Tell me about your project! What's it called and what does it do?");
+                    projectStep = 0;
+                    conversationStage = 'projects';
+                    return;
+                }
+                addMessage('ai', "I can help you add more details! Just tell me what you want to add — skills, experience, education, projects, or certifications. Or say 'show resume' to see what we have!");
+                return;
+            }
+
+            // Normal question flow
+            if (currentQuestionIndex <= questionFlow.length && currentQuestionIndex > 0) {
+                const lastQuestion = questionFlow[currentQuestionIndex - 1];
+
+                if (lastQuestion.isExperience) {
+                    handleExperienceInput(userMessage);
+                    return;
+                }
+
+                // Store the answer
+                const field = lastQuestion.field;
+                if (field && field !== 'experience') {
+                    if (field === 'professionalSummary') {
+                        // Make it more professional
+                        const enhanced = enhanceText(userMessage);
+                        resumeData[field] = enhanced;
+                        addMessage('ai', `I've polished that a bit for your resume:\n\n"${enhanced}"\n\nDoes that sound good? If not, just tell me what to change!`);
+                    } else {
+                        resumeData[field] = userMessage;
+                        // Confirm and move on
+                        const confirmations = {
+                            fullName: `Nice to meet you, ${userMessage.split(' ')[0]}! ✨`,
+                            email: 'Perfect! Recruiters will reach you there.',
+                            phone: 'Got your number! 📱',
+                            location: `${userMessage} — noted! 📍`,
+                            linkedin: 'LinkedIn added! Recruiters love checking profiles there.',
+                            portfolio: 'Portfolio added! Great way to showcase your work.',
+                        };
+                        const confirm = confirmations[field] || 'Got it! ✅';
+                        addMessage('ai', confirm);
+                    }
+                }
+            }
+
+            // Save and continue
+            saveResume();
+            updatePreview();
+            askNextQuestion();
+        }
+
+        function handleExperienceInput(userMessage) {
+            const msg = userMessage.trim();
+
+            if (experienceStep === 0) {
+                // Company and title
+                // Try to parse: "Company as Title since Date"
+                const patterns = [
+                    /(.+?)\s+(?:as|at)\s+(.+?)(?:\s+(?:since|from|started)\s+(.+))?$/i,
+                    /(.+?),\s*(.+?)(?:\s+(?:since|from|started)\s+(.+))?$/i,
+                ];
+
+                let company = msg,
+                    position = '',
+                    startDate = '';
+
+                for (const pattern of patterns) {
+                    const match = msg.match(pattern);
+                    if (match) {
+                        company = match[1];
+                        position = match[2];
+                        startDate = match[3] || '';
+                        break;
+                    }
+                }
+
+                tempExperience = {
+                    company: company,
+                    position: position || 'Professional',
+                    startDate: startDate || new Date().getFullYear().toString(),
+                    endDate: '',
+                    isCurrent: true,
+                    achievements: []
+                };
+
+                if (!position) {
+                    addMessage('ai', `Working at ${company} — nice! What's your job title there?`);
+                    experienceStep = 0.5;
+                } else {
+                    addMessage('ai', `${position} at ${company} — impressive! Now, tell me about your achievements there. What are you most proud of? Be specific — numbers and results make your resume stand out! 📊`);
+                    experienceStep = 1;
+                }
+            } else if (experienceStep === 0.5) {
+                tempExperience.position = msg;
+                addMessage('ai', `${msg} at ${tempExperience.company} — got it! Now tell me about your key achievements there. What did you accomplish? Include numbers if possible! 📊`);
+                experienceStep = 1;
+            } else if (experienceStep === 1) {
+                // Enhance the achievement
+                const enhanced = enhanceAchievement(msg);
+                tempExperience.achievements.push(enhanced);
+                addMessage('ai', `Great achievement! I've polished it:\n\n"${enhanced}"\n\nAny other achievements at ${tempExperience.company}? If not, just say 'that's all' or 'next'.`);
+                experienceStep = 2;
+            } else if (experienceStep === 2) {
+                if (msg.toLowerCase().includes('that') && (msg.toLowerCase().includes('all') || msg.toLowerCase().includes('it')) ||
+                    msg.toLowerCase().includes('next') || msg.toLowerCase().includes('no more') || msg.toLowerCase().includes('done')) {
+                    // Save experience
+                    resumeData.experiences.push({ ...tempExperience });
+                    tempExperience = {};
+                    experienceStep = 0;
+                    addMessage('ai', 'Experience added! 🎉');
+                    saveResume();
+                    updatePreview();
+                    askNextQuestion();
+                } else {
+                    // Another achievement
+                    const enhanced = enhanceAchievement(msg);
+                    tempExperience.achievements.push(enhanced);
+                    addMessage('ai', `Added! "${enhanced}"\n\nAny more achievements? Or say 'done' to continue.`);
+                }
+            }
+        }
+
+        function handleEducationInput(userMessage) {
+            const msg = userMessage.trim();
+
+            if (educationStep === 0) {
+                // Try to parse: "Degree in Field from Institution, Year-Year"
+                const patterns = [
+                    /(.+?)\s+(?:in|from|at)\s+(.+?)(?:\s+(?:from|at)\s+(.+?))?(?:\s*,?\s*(\d{4})\s*[-–]\s*(\d{4}|\w+))?$/i,
+                    /(.+?),\s*(.+?),\s*(.+?)(?:\s*,?\s*(\d{4})\s*[-–]\s*(\d{4}|\w+))?$/i,
+                ];
+
+                let institution = msg,
+                    degree = '',
+                    field = '',
+                    startYear = '',
+                    endYear = '';
+
+                for (const pattern of patterns) {
+                    const match = msg.match(pattern);
+                    if (match) {
+                        degree = match[1];
+                        field = match[2];
+                        institution = match[3] || match[2];
+                        startYear = match[4] || '';
+                        endYear = match[5] || '';
+                        break;
+                    }
+                }
+
+                tempEducation = { institution, degree: degree || 'Degree', field: field || '', startYear, endYear };
+
+                if (!degree || degree === msg) {
+                    addMessage('ai', `Studied at ${institution}? What degree did you earn there?`);
+                    educationStep = 0.5;
+                } else {
+                    addMessage('ai', `${degree} from ${institution} — solid! 🎓 What years did you attend? (e.g., 2020-2024)`);
+                    educationStep = 1;
+                }
+            } else if (educationStep === 0.5) {
+                tempEducation.degree = msg;
+                addMessage('ai', `${msg} from ${tempEducation.institution}. What years did you attend? (e.g., 2020-2024)`);
+                educationStep = 1;
+            } else if (educationStep >= 1) {
+                // Parse years
+                const yearMatch = msg.match(/(\d{4})\s*[-–]\s*(\d{4}|\w+)/);
+                if (yearMatch) {
+                    tempEducation.startYear = yearMatch[1];
+                    tempEducation.endYear = yearMatch[2];
+                }
+                resumeData.education.push({ ...tempEducation });
+                tempEducation = {};
+                educationStep = 0;
+                conversationStage = '';
+                addMessage('ai', 'Education added! 🎉');
+                saveResume();
+                updatePreview();
+                askNextQuestion();
+            }
+        }
+
+        function handleSkillsInput(userMessage) {
+            const skills = userMessage.split(/[,;]/).map(s => s.trim()).filter(s => s.length > 0);
+            skills.forEach(skill => {
+                resumeData.skills.push({
+                    name: skill,
+                    category: detectSkillCategory(skill)
+                });
+            });
+            conversationStage = '';
+            addMessage('ai', `Added ${skills.length} skill${skills.length > 1 ? 's' : ''}! 💪`);
+            saveResume();
+            updatePreview();
+            askNextQuestion();
+        }
+
+        function handleProjectsInput(userMessage) {
+            if (projectStep === 0) {
+                tempExperience = { name: userMessage, description: '', technologies: [], link: '' };
+                addMessage('ai', `"${userMessage}" — cool project! What does it do? Give me a brief description.`);
+                projectStep = 1;
+            } else if (projectStep === 1) {
+                tempExperience.description = userMessage;
+                addMessage('ai', 'What technologies did you use? List them separated by commas.');
+                projectStep = 2;
+            } else if (projectStep === 2) {
+                tempExperience.technologies = userMessage.split(/[,;]/).map(s => s.trim()).filter(s => s.length > 0);
+                resumeData.projects.push({ ...tempExperience });
+                tempExperience = {};
+                projectStep = 0;
+                conversationStage = '';
+                addMessage('ai', 'Project added! 🚀');
+                saveResume();
+                updatePreview();
+                askNextQuestion();
+            }
+        }
+
+        // ============ AI ENHANCEMENT FUNCTIONS ============
+        function enhanceText(text) {
+            // Make text more professional
+            let enhanced = text;
+            // Remove casual language
+            enhanced = enhanced.replace(/\b(I'?m|I am)\b/gi, '');
+            enhanced = enhanced.replace(/\b(just|really|very|actually|basically)\b/gi, '');
+            enhanced = enhanced.replace(/\b(kinda|sorta|gonna|wanna)\b/gi, '');
+            // Capitalize first letter
+            enhanced = enhanced.charAt(0).toUpperCase() + enhanced.slice(1);
+            // Ensure it ends with period
+            if (!enhanced.endsWith('.')) enhanced += '.';
+            // Trim extra spaces
+            enhanced = enhanced.replace(/\s+/g, ' ').trim();
+            return enhanced;
+        }
+
+        function enhanceAchievement(text) {
+            // Start with action verb
+            const actionVerbs = ['Built', 'Led', 'Launched', 'Developed', 'Optimized', 'Designed', 'Implemented',
+                'Spearheaded', 'Engineered', 'Created', 'Managed', 'Increased', 'Reduced', 'Streamlined', 'Automated'
+            ];
+            let enhanced = text.trim();
+            // Capitalize
+            enhanced = enhanced.charAt(0).toUpperCase() + enhanced.slice(1);
+            // Add action verb if missing
+            const startsWithVerb = actionVerbs.some(v => enhanced.toLowerCase().startsWith(v.toLowerCase()));
+            if (!startsWithVerb && !enhanced.match(/^\d/)) {
+                enhanced = 'Led ' + enhanced.charAt(0).toLowerCase() + enhanced.slice(1);
+            }
+            // End with period
+            if (!enhanced.endsWith('.')) enhanced += '.';
+            return enhanced;
+        }
+
+        function detectSkillCategory(skill) {
+            const skillLower = skill.toLowerCase();
+            const categories = {
+                'Technical': ['python', 'java', 'javascript', 'typescript', 'react', 'node', 'sql', 'aws', 'docker', 'kubernetes',
+                    'git', 'api', 'html', 'css', 'c++', 'golang', 'rust', 'mongodb', 'postgresql', 'redis', 'linux',
+                    'machine learning', 'ai', 'data', 'cloud'
+                ],
+                'Soft': ['leadership', 'communication', 'teamwork', 'management', 'problem solving', 'critical thinking',
+                    'time management', 'organization', 'presentation', 'negotiation', 'mentoring', 'coaching'
+                ],
+                'Language': ['english', 'hindi', 'spanish', 'french', 'german', 'mandarin', 'japanese', 'telugu', 'tamil',
+                    'kannada', 'marathi', 'bengali'
+                ],
+                'Framework': ['react', 'vue', 'angular', 'django', 'flask', 'spring', 'express', 'next', 'tailwind',
+                    'bootstrap', 'jquery'
+                ],
+                'Tool': ['excel', 'photoshop', 'figma', 'jira', 'slack', 'notion', 'tableau', 'powerpoint', 'word',
+                    'illustrator', 'canva'
+                ]
+            };
+            for (const [category, keywords] of Object.entries(categories)) {
+                if (keywords.some(k => skillLower.includes(k))) return category;
+            }
+            return 'Technical';
+        }
+
+        // ============ SEND MESSAGE ============
+        function sendMessage() {
+            if (isProcessing) return;
+            const input = document.getElementById('chatInput');
+            const msg = input.value.trim();
+            if (!msg) return;
+
+            input.value = '';
+            updateSendButton();
+            addMessage('user', msg);
+            isProcessing = true;
+            document.getElementById('sendBtn').disabled = true;
+
+            showTyping();
+            const delay = 1000 + Math.random() * 1500;
+            setTimeout(() => {
+                hideTyping();
+                processUserInput(msg);
+                isProcessing = false;
+                updateSendButton();
+                document.getElementById('chatInput').focus();
+            }, delay);
+        }
+
+        function quickAction(action) {
+            document.getElementById('chatInput').value = action;
+            sendMessage();
+        }
+
+        function handleKeyDown(event) {
+            if (event.key === 'Enter' && !event.shiftKey) {
+                event.preventDefault();
+                sendMessage();
+            }
+        }
+
+        function updateSendButton() {
+            const input = document.getElementById('chatInput');
+            const btn = document.getElementById('sendBtn');
+            btn.disabled = !input.value.trim() || isProcessing;
+        }
+
+        // ============ PREVIEW ============
+        function updatePreview() {
+            const container = document.getElementById('previewContent');
+            const data = resumeData;
+            const color = accentColor;
+            const fontFamily = "'Inter', sans-serif";
+
+            if (!data.fullName && data.experiences.length === 0 && data.education.length === 0) {
+                container.innerHTML = `
+                    <div style="text-align:center;color:#ccc;padding:60px 20px;">
+                        <div style="font-size:48px;">🐊</div>
+                        <p style="margin-top:12px;">Your resume will appear here<br>as you chat with the AI</p>
+                    </div>`;
+                return;
+            }
+
+            let html = `<div style="font-family:${fontFamily};">`;
+
+            // Name
+            html += `<div class="resume-section">
+                <div class="resume-name" style="color:${color};">${data.fullName || 'Your Name'}</div>
+                <div class="resume-contact">`;
+            if (data.email) html += `<span>📧 ${data.email}</span>`;
+            if (data.phone) html += `<span>📱 ${data.phone}</span>`;
+            if (data.location) html += `<span>📍 ${data.location}</span>`;
+            if (data.linkedin) html += `<span>🔗 ${data.linkedin}</span>`;
+            if (data.portfolio) html += `<span>🌐 ${data.portfolio}</span>`;
+            if (data.github) html += `<span>💻 ${data.github}</span>`;
+            html += `</div></div>`;
+
+            // Professional Summary
+            if (data.professionalSummary) {
+                html += `<div class="resume-section">
+                    <h2 style="color:${color};border-color:${color};">Professional Summary</h2>
+                    <div class="resume-summary">${data.professionalSummary}</div>
+                </div>`;
+            }
+
+            // Experience
+            if (data.experiences.length > 0) {
+                html += `<div class="resume-section">
+                    <h2 style="color:${color};border-color:${color};">Experience</h2>`;
+                data.experiences.forEach(exp => {
+                    html += `<div class="resume-item">
+                        <div class="resume-item-header">
+                            <div>
+                                <div class="resume-item-title">${exp.position}</div>
+                                <div class="resume-item-subtitle">${exp.company}</div>
+                            </div>
+                            <div class="resume-item-date">${exp.startDate} - ${exp.isCurrent ? 'Present' : exp.endDate}</div>
+                        </div>`;
+                    if (exp.achievements.length > 0) {
+                        html += `<ul class="resume-item-details">`;
+                        exp.achievements.forEach(ach => {
+                            html += `<li>${ach}</li>`;
+                        });
+                        html += `</ul>`;
+                    }
+                    html += `</div>`;
+                });
+                html += `</div>`;
+            }
+
+            // Education
+            if (data.education.length > 0) {
+                html += `<div class="resume-section">
+                    <h2 style="color:${color};border-color:${color};">Education</h2>`;
+                data.education.forEach(edu => {
+                    html += `<div class="resume-item">
+                        <div class="resume-item-header">
+                            <div>
+                                <div class="resume-item-title">${edu.institution}</div>
+                                <div class="resume-item-subtitle">${edu.degree}${edu.field ? ' in ' + edu.field : ''}</div>
+                            </div>
+                            <div class="resume-item-date">${edu.startYear} - ${edu.endYear}</div>
+                        </div>
+                    </div>`;
+                });
+                html += `</div>`;
+            }
+
+            // Skills
+            if (data.skills.length > 0) {
+                html += `<div class="resume-section">
+                    <h2 style="color:${color};border-color:${color};">Skills</h2>
+                    <div class="skill-tags">`;
+                data.skills.forEach(skill => {
+                    html += `<span class="skill-tag" style="background:${color}15;color:${color};">${skill.name}</span>`;
+                });
+                html += `</div></div>`;
+            }
+
+            // Projects
+            if (data.projects.length > 0) {
+                html += `<div class="resume-section">
+                    <h2 style="color:${color};border-color:${color};">Projects</h2>`;
+                data.projects.forEach(proj => {
+                    html += `<div class="resume-item">
+                        <div class="resume-item-title">${proj.name}</div>
+                        <div class="resume-item-subtitle">${proj.description}</div>
+                        ${proj.technologies.length > 0 ? `<div class="skill-tags" style="margin-top:4px;">${proj.technologies.map(t => `<span class="skill-tag" style="font-size:10px;">${t}</span>`).join('')}</div>` : ''}
+                        ${proj.link ? `<a href="${proj.link}" style="font-size:11px;color:${color};" target="_blank">${proj.link}</a>` : ''}
+                    </div>`;
+                });
+                html += `</div>`;
+            }
+
+            // Certifications
+            if (data.certifications.length > 0) {
+                html += `<div class="resume-section">
+                    <h2 style="color:${color};border-color:${color};">Certifications</h2>`;
+                data.certifications.forEach(cert => {
+                    html += `<div class="resume-item">
+                        <div class="resume-item-title">${cert.name}</div>
+                        <div class="resume-item-subtitle">${cert.issuer}${cert.date ? ' - ' + cert.date : ''}</div>
+                    </div>`;
+                });
+                html += `</div>`;
+            }
+
+            // Languages
+            if (data.languages.length > 0) {
+                html += `<div class="resume-section">
+                    <h2 style="color:${color};border-color:${color};">Languages</h2>
+                    <div class="skill-tags">`;
+                data.languages.forEach(lang => {
+                    html += `<span class="skill-tag">${lang.name} (${lang.proficiency})</span>`;
+                });
+                html += `</div></div>`;
+            }
+
+            html += `</div>`;
+            container.innerHTML = html;
+        }
+
+        function changeTemplate(template, btn) {
+            currentTemplate = template;
+            // Update active button
+            document.querySelectorAll('[data-template]').forEach(b => {
+                b.classList.remove('active');
+                b.style.background = '#eee';
+                b.style.color = '#333';
+            });
+            btn.classList.add('active');
+            btn.style.background = 'var(--navy)';
+            btn.style.color = 'white';
+            updatePreview();
+        }
+
+        function changeAccentColor(color) {
+            accentColor = color;
+            updatePreview();
+        }
+
+        // ============ PDF DOWNLOAD ============
+        function downloadPDF() {
+            const previewEl = document.getElementById('previewContent');
+            const htmlContent = previewEl.innerHTML;
+            const styles = document.querySelector('style').textContent;
+
+            const fullHtml = `
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <style>
+                        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap');
+                        body { font-family: 'Inter', sans-serif; padding: 30px; color: #1a1a2e; }
+                        .resume-section { margin-bottom: 18px; }
+                        .resume-section h2 { font-size: 12px; text-transform: uppercase; letter-spacing: 2px; border-bottom: 2px solid; padding-bottom: 4px; margin-bottom: 8px; }
+                        .resume-name { font-size: 26px; font-weight: 800; }
+                        .resume-contact { font-size: 11px; color: #6b7280; margin-top: 4px; display: flex; flex-wrap: wrap; gap: 4px 12px; }
+                        .resume-summary { font-size: 13px; color: #444; line-height: 1.5; }
+                        .resume-item { margin-bottom: 10px; page-break-inside: avoid; }
+                        .resume-item-header { display: flex; justify-content: space-between; align-items: flex-start; }
+                        .resume-item-title { font-weight: 600; font-size: 14px; }
+                        .resume-item-subtitle { font-size: 13px; color: #6b7280; }
+                        .resume-item-date { font-size: 11px; color: #6b7280; white-space: nowrap; }
+                        .resume-item-details { font-size: 12px; color: #555; margin-top: 4px; padding-left: 16px; line-height: 1.5; }
+                        .resume-item-details li { margin-bottom: 2px; }
+                        .skill-tags { display: flex; flex-wrap: wrap; gap: 6px; }
+                        .skill-tag { font-size: 11px; padding: 3px 10px; border-radius: 12px; background: #f0f0f0; }
+                        @media print { body { padding: 0; } }
+                    </style>
+                </head>
+                <body>${htmlContent}</body>
+                </html>
+            `;
+
+            // Create blob and download
+            const blob = new Blob([fullHtml], { type: 'text/html' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${resumeData.fullName || 'Resume'}_Resume.html`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+
+            addMessage('system', '📥 Resume downloaded! Open the HTML file in your browser and use Ctrl+P to save as PDF.');
+        }
+
+        function shareResume() {
+            const shareableLink = 'resumate.ai/share/' + generateId();
+            navigator.clipboard.writeText(shareableLink).then(() => {
+                addMessage('system', `🔗 Share link copied: ${shareableLink}`);
+            }).catch(() => {
+                addMessage('system', `🔗 Your share link: ${shareableLink}`);
+            });
+        }
+
+        function generateId() {
+            return Math.random().toString(36).substring(2, 10);
+        }
+
+        // ============ MOBILE ============
+        function toggleMobilePreview() {
+            const panel = document.getElementById('previewPanel');
+            panel.classList.toggle('mobile-open');
+            updatePreview();
+        }
+
+        function closeMobilePreview() {
+            document.getElementById('previewPanel').classList.remove('mobile-open');
+        }
+
+        // ============ STORAGE ============
+        function saveResume() {
+            localStorage.setItem('resumate_resume', JSON.stringify(resumeData));
+        }
+
+        // ============ INIT ============
+        document.getElementById('chatInput').addEventListener('input', updateSendButton);
+        init();
+        document.getElementById('chatInput').focus();
+    </script>
+</body>
+</html>
